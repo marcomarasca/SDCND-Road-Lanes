@@ -130,7 +130,7 @@ and add it to different lists according to the slope (e.g. to divide left and ri
 # Skips steeps angles
 if angle < 15 or angle > 75:
     continue
-if slope > 0: # Y is inversed
+if slope > 0: # Y is inverted (top-down)
     right_lines.append((slope, intercept))
 elif slope < 0:
     left_lines.append((slope, intercept))
@@ -147,19 +147,18 @@ From the average of the slope and intercept we can compute the sinlge left and r
 
 ```python
 def get_line_coordinates(line_slope_intercept, y1, y2):
-    """
-    Returns the coordinates of a line given the input (slope, intercept) tuple and two partial coordinates
-    """
-    
-    x1 = int((y1 - line_slope_intercept[1]) / line_slope_intercept[0])
-    x2 = int((y2 - line_slope_intercept[1]) / line_slope_intercept[0])
+
+    slope, intercept = line_slope_intercept
+
+    x1 = int((y1 - intercept) / slope)
+    x2 = int((y2 - intercept) / slope)
     
     return x1, y1, x2, y2
     
 def extract_lanes(img, lines, vertical_clip_ratio = 0.62):
-    """
-    Returns the right and left road lanes detected from the mean of the given set of lines.
-    """
+
+    # This computes the average slope and intercept from the set of lines
+    # left_line and right_line are tuple containing the (slope, intercept)
     left_line, right_line = mean_slope_intercept(lines)
     
     img_shape = img.shape
