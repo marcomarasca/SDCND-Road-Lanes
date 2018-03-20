@@ -49,7 +49,7 @@ white_mask = cv2.inRange(img_converted, np.array([0, 200, 0]), np.array([255, 25
 yellow_mask = cv2.inRange(img_converted, np.array([10, 100, 150]), np.array([40, 255, 255]))
 ```
 
-In our case we simple convert the input image to HSL and we select a range for the yellow and white regions using mostly the L(uminance) channel for the whites and the H(ue) channel for the yellow.
+In our case we simply convert the input image to HSL and we select a range for the yellow and white regions using mostly the L(uminance) channel for the whites and the H(ue) channel for the yellow.
 
 A simple way to get some starting values for the target color space from the RGB values is to convert the color
 values:
