@@ -21,8 +21,8 @@ The goal of the project is to take in input an RGB image and output an annotated
 The pipeline I implemented consists of the following steps:
 
 1. Color masking for white and yellow regions converting to HSL colorspace
-2. Gaussian blur to reduce noise
-3. Grayscale conversion for the edge detection
+2. Grayscale conversion for the edge detection
+3. Gaussian blur to reduce noise
 4. Edge detection using Canny transform
 5. Region of interest masking
 6. Lines detection in the masked region using a hough transform

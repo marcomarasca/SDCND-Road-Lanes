@@ -3,54 +3,178 @@
 
 <img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
 
+[//]: # (Image References)
+
+[image1]: ./examples/input.jpg "Input image"
+[image2]: ./examples/output_7_final.jpg "Final image"
+[image3]: ./examples/output_1_color_mask.jpg "Color masking"
+[image4]: ./examples/output_2_grayscale.jpg "Grayscale conversion"
+[image5]: ./examples/output_3_blurred.jpg "Gaussian blur"
+[image6]: ./examples/output_4_edges.jpg "Edge detection"
+[image7]: ./examples/output_5_masked.jpg "Region of interest"
+[image8]: ./examples/output_5_masked_region.jpg "Masked region"
+[image9]: ./examples/output_6_lanes.jpg "Lane detection"
+[image10]: ./examples/output_6_lines.jpg "Detected lines"
+
 Overview
 ---
 
 When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+In this project we implement a simple lane detection pipeline in images using Python and OpenCV. OpenCV ([Open-Source Computer Vision](https://opencv.org/)), which is a package that has many useful tools for analyzing images.
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
+The code is included in the [jupyter notebook](P1.ipynb) in the repository.
 
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+The pipeline that is implemented in this project consists of the follwing steps:
 
+1. Color masking for white and yellow regions converting to HSL colorspace
+2. Grayscale conversion for the edge detection
+3. Gaussian blur to reduce noise
+4. Edge detection using Canny transform
+5. Region of interest masking
+6. Lines detection in the masked region using a hough transform
+7. Road lane detection averaging the lines from the previous step
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
+![alt text][image1] ![alt text][image2]
 
-1. Describe the pipeline
+## Color Masking
 
-2. Identify any shortcomings
+A simple pre-processing step that can be performed is to find the yellow and white regions in the input image, while this is not probably the best apporach it works well for simple scenarios. An interesting way to work with colors in images is actually to examin different color spaces. RGB is not very flexible as each channel affects each other. A simple guide for color selection in different color spaces can be found at https://www.learnopencv.com/color-spaces-in-opencv-cpp-python. 
 
-3. Suggest possible improvements
+OpenCV provides a simple way to select ranges of colors using the [inRange](https://docs.opencv.org/3.4.1/d2/de8/group__core__array.html#ga48af0ab51e36436c5d04340e036ce981) function.
+```python
+img_converted = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+    
+white_mask = cv2.inRange(img_converted, np.array([0, 200, 0]), np.array([255, 255, 255]))
+yellow_mask = cv2.inRange(img_converted, np.array([10, 100, 150]), np.array([40, 255, 255]))
+```
 
-We encourage using images in your writeup to demonstrate how your pipeline works.  
+In our case we simple convert the input image to HSL and we select a range for the yellow and white regions using mostly the L(uminance) channel for the whites and the H(ue) channel for the yellow.
 
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
+We later add the two masks:
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
+```python
+mask = cv2.bitwise_or(white_mask, yellow_mask)
+```
 
+And finally apply the mask to the input image:
 
-The Project
----
+```python
+return cv2.bitwise_and(img, img, mask = mask)
+```
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+![alt text][image3]
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+## Edge Detection
 
-**Step 2:** Open the code in a Jupyter Notebook
+For the edge detection we use a [Canny transform](https://en.wikipedia.org/wiki/Canny_edge_detector), the input is an 8 bit image so we need to convert first to grayscale. We also apply an additional Gaussian filter in order to further reduce the noise in the image and avoid outliers.
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+```python
+grayscale = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+kernel_size = 15
+blurred = cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+```
+![alt text][image4] ![alt text][image5]
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+Note that the higher the kernel size the more the image will be blurred.
 
-`> jupyter notebook`
+```python
+low_threshold = 50
+high_threshold = 150
+edge_img = cv2.Canny(img, low_threshold, high_threshold)
+```
+![alt text][image6]
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+## Region of Interest
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+To further improve the accuracy we apply a region of interest to the image masking out a polygon that would represent the road in front of the camera:
+```python
+x = img.shape[1]
+y = img.shape[0]
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+region_center_gap = 50
+vertical_clip_ratio = 0.62
+side_clip_ratio = 0.08
 
+region = np.array([[(x * side_clip_ratio, y * (1 - side_clip_ratio)), 
+                    (x // 2 - region_center_gap, y * vertical_clip_ratio), 
+                    (x // 2 + region_center_gap, y * vertical_clip_ratio), 
+                    (x * (1 - side_clip_ratio), y * (1 - side_clip_ratio))]],
+                    dtype=np.int32)
+
+mask = np.zeros_like(img)   
+    
+cv2.fillPoly(mask, region, 255)
+```
+![alt text][image8] ![alt text][image7]
+
+## Lane Detection
+
+Now the last part of the pipeline tries to detect the road lanes from the image above, first we can detect all the lines in the image using a [hough transform](https://en.wikipedia.org/wiki/Hough_transform):
+
+```python
+lines = cv2.HoughLinesP(img, 1, np.pi/180, 12, np.array([]), minLineLength=20, maxLineGap=200)
+```
+![alt text][image10]
+
+Finally we can proceed in detecting the road lanes using an average of the lines extracted from the hough transform. The hough transform returns a set of lines as points coordinates representing the lines, we can therefore compute the slope and intercept of each line:
+
+```python
+slope = (y2 - y1) / (x2 - x1)
+intercept = y1 - slope * x1
+```
+
+and add it to different lists according to the slope (e.g. to divide left and right lines according to the direction):
+
+```python
+# Skips steeps angles
+if angle < 15 or angle > 75:
+    continue
+if slope > 0: # Y is inversed
+    right_lines.append((slope, intercept))
+elif slope < 0:
+    left_lines.append((slope, intercept))
+```
+
+Finally we compute the mean:
+
+```python
+left_mean = np.mean(left_lines, axis = 0) if len(left_lines) > 0 else None
+right_mean = np.mean(right_lines, axis = 0) if len(right_lines) > 0 else None    
+```
+
+From the average of the slope and intercept we can compute the sinlge left and right lanes:
+
+```python
+def get_line_coordinates(line_slope_intercept, y1, y2):
+    """
+    Returns the coordinates of a line given the input (slope, intercept) tuple and two partial coordinates
+    """
+    
+    x1 = int((y1 - line_slope_intercept[1]) / line_slope_intercept[0])
+    x2 = int((y2 - line_slope_intercept[1]) / line_slope_intercept[0])
+    
+    return x1, y1, x2, y2
+    
+def extract_lanes(img, lines, vertical_clip_ratio = 0.62):
+    """
+    Returns the right and left road lanes detected from the mean of the given set of lines.
+    """
+    left_line, right_line = mean_slope_intercept(lines)
+    
+    img_shape = img.shape
+    lanes = []
+    
+    if left_line is not None:
+        left_lane = get_line_coordinates(left_line, int(img_shape[1]), int(img_shape[0] * vertical_clip_ratio))
+        lanes.append([left_lane])
+        
+    if right_line is not None:
+        right_lane = get_line_coordinates(right_line, int(img_shape[1]), int(img_shape[0] * vertical_clip_ratio))
+        lanes.append([right_lane])
+    
+    return lanes
+```
+![alt text][image9] ![alt text][image2]
+
+The pipeline is then applied to video files, processing each frame and writing a new annotated video.
