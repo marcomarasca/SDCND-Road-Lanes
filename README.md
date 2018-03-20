@@ -177,4 +177,7 @@ def extract_lanes(img, lines, vertical_clip_ratio = 0.62):
 ```
 ![alt text][image9] ![alt text][image2]
 
-The pipeline is then applied to video files, processing each frame and writing a new annotated video.
+The pipeline is then applied to video files, processing each frame and writing a new annotated video:
+
+[![Lane Detection Pipeline](http://img.youtube.com/vi/aQgzi_cLuFM/0.jpg)](http://www.youtube.com/watch?v=aQgzi_cLuFM "Lane Detection Pipeline")
+
