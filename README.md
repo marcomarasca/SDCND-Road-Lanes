@@ -1,7 +1,7 @@
 # **Finding Lane Lines on the Road** 
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+[![Lane Detection Pipeline](http://img.youtube.com/vi/aQgzi_cLuFM/0.jpg)](http://www.youtube.com/watch?v=aQgzi_cLuFM "Lane Detection Pipeline")
 
 [//]: # (Image References)
 
@@ -151,7 +151,7 @@ left_mean = np.mean(left_lines, axis = 0) if len(left_lines) > 0 else None
 right_mean = np.mean(right_lines, axis = 0) if len(right_lines) > 0 else None    
 ```
 
-From the average of the slope and intercept we can compute the sinlge left and right lanes:
+From the average of the slope and intercept we can compute the single left and right lanes:
 
 ```python
 def get_line_coordinates(line_slope_intercept, y1, y2):
@@ -182,9 +182,13 @@ def extract_lanes(img, lines, vertical_clip_ratio = 0.62):
     
     return lanes
 ```
-![alt text][image9] ![alt text][image2]
+![alt text][image9] 
 
-The pipeline is then applied to video files, processing each frame and writing a new annotated video:
+The lane mask is then overlayed on top of the original image:
+
+![alt text][image2]
+
+Finally we can apply the pipeline to a video input, processing each frame and writing a new annotated video:
 
 [![Lane Detection Pipeline](http://img.youtube.com/vi/aQgzi_cLuFM/0.jpg)](http://www.youtube.com/watch?v=aQgzi_cLuFM "Lane Detection Pipeline")
 
