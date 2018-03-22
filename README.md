@@ -39,7 +39,7 @@ The pipeline that is implemented in this project consists of the follwing steps:
 
 ## Color Masking
 
-A simple pre-processing step that can be performed is to find the yellow and white regions in the input image, while this is not probably the best apporach it works well for simple scenarios. An interesting way to work with colors in images is actually to examin different color spaces. RGB is not very flexible as each channel affects each other. A simple guide for color selection in different color spaces can be found at https://www.learnopencv.com/color-spaces-in-opencv-cpp-python. 
+A simple pre-processing step that can be performed is to find the yellow and white regions in the input image, while this is not probably the best apporach it works well for simple scenarios. An interesting way to work with colors in images is actually to examine different color spaces. RGB is not very flexible as each channel affects each other. A simple guide for color selection in different color spaces can be found at https://www.learnopencv.com/color-spaces-in-opencv-cpp-python. 
 
 OpenCV provides a simple way to select ranges of colors using the [inRange](https://docs.opencv.org/3.4.1/d2/de8/group__core__array.html#ga48af0ab51e36436c5d04340e036ce981) function.
 ```python
@@ -125,7 +125,7 @@ lines = cv2.HoughLinesP(img, 1, np.pi/180, 12, np.array([]), minLineLength=20, m
 ```
 ![alt text][image10]
 
-Finally we can proceed in detecting the road lanes using an average of the lines extracted from the hough transform. The hough transform returns a set of lines as points coordinates representing the lines, we can therefore compute the slope and intercept of each line:
+Next we can proceed in detecting the road lanes using an average of the lines extracted from the hough transform. The hough transform returns a set of lines as points coordinates representing the lines, we can therefore compute the slope and intercept of each line:
 
 ```python
 slope = (y2 - y1) / (x2 - x1)
@@ -144,7 +144,7 @@ elif slope < 0:
     left_lines.append((slope, intercept))
 ```
 
-Finally we compute the mean:
+We can then compute the mean:
 
 ```python
 left_mean = np.mean(left_lines, axis = 0) if len(left_lines) > 0 else None
@@ -192,3 +192,32 @@ Finally we can apply the pipeline to a video input, processing each frame and wr
 
 [![Lane Detection Pipeline](http://img.youtube.com/vi/aQgzi_cLuFM/0.jpg)](http://www.youtube.com/watch?v=aQgzi_cLuFM "Lane Detection Pipeline")
 
+## Frame Interpolation
+
+Looking at the video the lines are a bit jumpy, this happens since the average of the lines detected in each image are computed for each frame independently. We can improve this considering that we do have information form previous frames in a video and the lines should not change drastically from frame to frame. In order to achieve this we have various options, the one implemented here simply keeps a fixed size buffer with the lanes detected in previous frames which is used each time the lines detected by the hough transform are averaged in order to find the two lanes. Basically the list of lines is augmented with the lines perviously detected in older frames.
+
+```python
+from collections import deque
+
+class SmoothLaneProcessor:
+    
+    def __init__(self, buffer_size = 50):
+        # Note that the buffer contains both the left and right lanes
+        self.buffer  = deque(maxlen = buffer_size)
+        
+    def _detect_lanes(self, img, color = [255, 0, 0], thickness = 10, vertical_clip_ratio = 0.62):
+        
+        # Lines detected for the current frame
+        lines = extract_lines(img)
+    
+        if len(self.buffer) > 0:
+            # Includes the lanes from the previous frames in the lines list
+            lines = np.append(lines, self.buffer, axis = 0)
+    
+        lanes = extract_lanes(img, lines, vertical_clip_ratio = vertical_clip_ratio)
+        
+        # Add the computed lanes to the buffer
+        self.buffer.extend(lanes)
+        
+        return overlay_lanes(img, lanes, color = color, thickness = thickness)
+```
